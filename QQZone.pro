@@ -1,0 +1,32 @@
+#-------------------------------------------------
+#
+# Project created by QtCreator 2016-05-18T23:51:50
+#
+#-------------------------------------------------
+
+QT       += core gui
+QT += network
+CONFIG += c++11
+QT += qml
+
+
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
+TARGET = QQZone
+TEMPLATE = app
+
+
+SOURCES += main.cpp \
+    qqhttp.cpp \
+    qqzone.cpp \
+    myhttp.cpp
+
+HEADERS  += \
+    qqhttp.h \
+    qqzone.h \
+    myhttp.h
+
+FORMS    += mainwindow.ui
+
+DISTFILES += \
+    tx.js
