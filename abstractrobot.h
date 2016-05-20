@@ -24,7 +24,7 @@ protected:
 public:
     explicit AbstractRobot(QObject *parent = 0);
     virtual ~AbstractRobot();
-    virtual bool request(const QString &, const CallBack &, Method method = GET) = 0;
+    virtual bool request(const QString &, QString const &, const CallBack &, Method m = GET) = 0;
     virtual const std::shared_ptr<QNetworkReply> getReply()  const;
 signals:
 

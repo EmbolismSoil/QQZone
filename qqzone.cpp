@@ -18,7 +18,7 @@ QQZone::QQZone(QObject *parent):
     _cookies(std::make_shared<QList<QNetworkCookie> >()),
     _timer(std::make_shared<QTimer>()),
     _doLikeSet(new std::set<QString>()),
-    _Robot(std::make_shared<TulingRobot>("0d03cea08993d83703e7dfa0d31a0b7d","acb123"))
+    _Robot(std::make_shared<TulingRobot>("0d03cea08993d83703e7dfa0d31a0b7d"))
 {    
    QString pgv_info("pgv_info");
    auto pgv_info_value = genSSID("ssid=s");
@@ -204,7 +204,7 @@ void QQZone::doLike(QString &jsonStr)
         rex.setMinimal(true);
         rex.indexIn(html);
         std::string content = rex.cap(1).toStdString();
-        _Robot->request(rex.cap(1), [this, topicId, uin]{
+        _Robot->request(rex.cap(1), uin ,[this, topicId, uin]{
             auto ptr = _Robot->getReply();
             if (!ptr->isReadable())
                 return false;

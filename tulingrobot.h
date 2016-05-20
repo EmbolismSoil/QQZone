@@ -10,12 +10,11 @@ class TulingRobot : public AbstractRobot
 {
 private:
     std::shared_ptr<QQHttp>  _ptrHttp;
-    QString _TulingURL;
-
+    QString _key;
 public:
-    TulingRobot(const QString &key, const QString &id, QObject *parent = 0);
+    TulingRobot(const QString &key, QObject *parent = 0);
     virtual ~TulingRobot();
-    virtual bool request(const QString &, const CallBack &, Method m = GET) override;
+    virtual bool request(const QString &, QString const &, const CallBack &, Method m = GET) override;
 
 protected slots:
     virtual void readyReply(QNetworkReply *) override;

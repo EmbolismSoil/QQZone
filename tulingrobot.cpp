@@ -1,10 +1,10 @@
 #include "tulingrobot.h"
 
-TulingRobot::TulingRobot(const QString &key, const QString &id, QObject *parent):
+TulingRobot::TulingRobot(const QString &key,  QObject *parent):
     AbstractRobot(parent),
-    _ptrHttp(std::make_shared<QQHttp>(parent))
+    _ptrHttp(std::make_shared<QQHttp>(parent)),
+  _key(key)
 {
-    _TulingURL = QString ("http://www.tuling123.com/openapi/api?key=%1&userid=%2&info=").arg(key).arg(id);
     connect(_ptrHttp.get(), SIGNAL(readyRead(QNetworkReply*)),
                                             this, SLOT(readyReply(QNetworkReply*)));
 }
@@ -14,11 +14,12 @@ TulingRobot::~TulingRobot()
 
 }
 
-bool TulingRobot::request(const QString &URL,
+bool TulingRobot::request(const QString &URL,QString const &id,
                             const AbstractRobot::CallBack &cb, Method m)
 {
     (void)m;
-     auto Base= _TulingURL;
+     auto Base= QString ("http://www.tuling123.com/openapi/api?key=%1&userid=%2&info=").arg(_key).arg(id);
+;
      Base.append(URL);
      auto FullURL = QUrl(Base);
 
