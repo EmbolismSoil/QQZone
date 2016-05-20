@@ -34,12 +34,14 @@ private:
                                      QString const &curKey, QString const &uniKey);
      QString jsObj2JSOn(QString const&);
      QString &dealContent(QString &content);
+     QString &dealNickName(QString &nickName);
      QString getMyUin();
 private slots:
      void queryQRCode();
      void onTimerPoll();
      void pollForNewFeed();
-     void doRemark(QString const&, QString const&, QString const&);
+     void doRemark(QString const&, QString const&, QString const&,
+                    QString const &commentId=QString(), QString const &commitUin = QString());
      void doReply(QString const &, int count);
 public:
      explicit QQZone(QObject *parent = 0);
