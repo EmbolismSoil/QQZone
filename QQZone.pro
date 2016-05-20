@@ -19,12 +19,16 @@ TEMPLATE = app
 SOURCES += main.cpp \
     qqhttp.cpp \
     qqzone.cpp \
-    myhttp.cpp
+    myhttp.cpp \
+    tulingrobot.cpp \
+    abstractrobot.cpp
 
 HEADERS  += \
     qqhttp.h \
     qqzone.h \
-    myhttp.h
+    myhttp.h \
+    tulingrobot.h \
+    abstractrobot.h
 
 FORMS    += mainwindow.ui
 

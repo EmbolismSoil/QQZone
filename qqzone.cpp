@@ -17,7 +17,8 @@ QQZone::QQZone(QObject *parent):
     _label(std::make_shared<QLabel>()),
     _cookies(std::make_shared<QList<QNetworkCookie> >()),
     _timer(std::make_shared<QTimer>()),
-    _doLikeSet(new std::set<QString>())
+    _doLikeSet(new std::set<QString>()),
+    _Robot(std::make_shared<TulingRobot>("0d03cea08993d83703e7dfa0d31a0b7d","acb123"))
 {    
    QString pgv_info("pgv_info");
    auto pgv_info_value = genSSID("ssid=s");
@@ -126,10 +127,12 @@ void QQZone::parseCookie()
                     _cookies->erase(pos);
                  }else _cookies->push_back(iter);
             }
+#ifdef __USER_DEBUG__
             qDebug() << "========================Cookies=====================";
             for (auto &iter : *_cookies){
                 qDebug() << QString(iter.toRawForm());
             }
+#endif
         }
     }
 }
@@ -176,20 +179,48 @@ void QQZone::doLike(QString &jsonStr)
         QString curLink = rexKey.cap(1);
         rexKey.setPattern("data-unikey=\"(.*)\" ");
         rexKey.indexIn(html);
-       QString uniLink = rexKey.cap(1);
-
+        QString uniLink = rexKey.cap(1);
+        rexKey.setPattern("data-topicid=\"(.*)\" ");
+        rexKey.indexIn(html);
+        QString topicId = rexKey.cap(1);
         //.*</i>取消赞\\([0-9]*\\)</a>.*
          QRegExp rexDid(".*</i>取消赞\\([0-9]*\\)</a>.*");
-        if (rexDid.indexIn(html) != -1){
-            //std::cout << html.toStdString() << std::endl;
+#if 1
+        if (rexDid.indexIn(html) != -1 || nickName == QString("官方Qzone")){
+          //  std::cout << html.toStdString() << std::endl;
             continue;
         }
+#else
+         if(nickName == QString("地瓜叶爸爸[em]e327840[/em]") || nickName == QString("大眼萌")){
+            // std::cout << html.toStdString() << std::endl;
+         }else{
+             continue;
+         }
+#endif
         postLikeReq(uin, key, appid, type, curLink, uniLink);
+      //  doRemark(uin, topicId, QString("test"));
         QString parttern("<div class=\"f-info\">(.+)</div>");
         QRegExp rex(parttern);
         rex.setMinimal(true);
         rex.indexIn(html);
         std::string content = rex.cap(1).toStdString();
+        _Robot->request(rex.cap(1), [this, topicId, uin]{
+            auto ptr = _Robot->getReply();
+            if (!ptr->isReadable())
+                return false;
+
+            QByteArray buf = ptr->readAll();
+            auto _Json = QJsonDocument::fromJson(buf);
+            if (_Json.isObject()){
+                QJsonObject obj = _Json.object();
+                if (obj.contains("text")){
+                    QString remark = obj["text"].toString();
+                    qDebug() << remark;
+                    doRemark(uin, topicId, remark);
+                }
+            }
+            return true;
+        });
         std::cout << "nickNmae = " << nickName.toStdString()
                                 << "  uin = " << uin.toStdString()
                                  << " content : " << content << std::endl;
@@ -201,6 +232,7 @@ void QQZone::postLikeReq(const QString &uin, const QString &key,
                                         const QString &appid, const QString &type,
                                         QString const &curKey, QString const &uniKey)
 {
+    Q_UNUSED(uin);
     QNetworkCookie uincookie(QByteArray("uin"), QByteArray(""));
      auto uinPos = std::find(_cookies->begin(), _cookies->end(), uincookie);
      QString fullUin(uinPos->value());
@@ -318,5 +350,51 @@ useutf8=1&outputhtmlfeed=1&getob=1&g_tk=%2").arg(uin).arg(genG_tk(QString(p_skey
                                          auto jsonString = value.call().toString();
                                          doLike(jsonString);
                                          return true;
-                             });
+     });
+}
+
+void QQZone::doRemark(QString const &hostUin,QString const &topicId,
+                                        QString const &words)
+{
+    QNetworkCookie uincookie(QByteArray("uin"), QByteArray(""));
+     auto uinPos = std::find(_cookies->begin(), _cookies->end(), uincookie);
+     QString fullUin(uinPos->value());
+     QString opuin;
+     for (auto pos = fullUin.begin() + 2; pos != fullUin.end(); ++pos){
+         opuin.push_back(*pos);
+     }
+
+    QNetworkCookie cookie(QByteArray("p_skey"), QByteArray(""));
+    auto p_skeyPos = std::find(_cookies->begin(), _cookies->end(), cookie);
+    QUrl url(QString("http://taotao.qzone.qq.com/cgi-bin/emotion_cgi_re_feeds?g_tk=%1").arg(genG_tk(QString(p_skeyPos->value()))));
+    auto table = QString("qzreferrer=http://user.qzone.qq.com/%1&topicId=%2&\
+feedsType=100&inCharset=utf-8&outCharset=utf-8&plat=qzone&source=ic&\
+hostUin=%3&isSignIn=&platformid=&uin=%1&format=fs&ref=feeds&content=%4&\
+richval=&richtype=&private=0&paramstr=1").arg(opuin).arg(topicId).arg(hostUin).arg(words);
+     QByteArray content = QByteArray::fromStdString(table.toStdString());
+     auto contentLength = content.length();
+
+    QNetworkRequest req(url);
+    req.setRawHeader(QByteArray("Cookie"), QByteArray::fromStdString(cookieString().toStdString()));
+    req.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
+    req.setHeader(QNetworkRequest::ContentLengthHeader,contentLength);
+    _Http->request(req, [this]{return true;}, MyHttp::POST, &content);
+//qzreferrer:http://user.qzone.qq.com/743703241
+//topicId:  from json
+//feedsType:100
+//inCharset:utf-8
+//outCharset:utf-8
+//plat:qzone
+//source:ic
+//hostUin:2242855368
+//isSignIn:
+//platformid:52
+//uin:743703241
+//format:fs
+//ref:feeds
+//content:赞一个
+//richval:
+//richtype:
+//private:0
+//paramstr:1
 }

@@ -8,6 +8,7 @@
 #include <QDebug>
 #include <memory>
 #include <set>
+#include <tulingrobot.h>
 
 class QQZone: public QObject
 {
@@ -18,6 +19,8 @@ private:
      std::shared_ptr<QList<QNetworkCookie> > _cookies;
      std::shared_ptr<QTimer> _timer;
      std::shared_ptr<std::set<QString> > _doLikeSet;
+     std::shared_ptr<TulingRobot> _Robot;
+
      QString genSSID(QString prefix = QString());
      void requestCookies();
      void parseCookie();
@@ -30,6 +33,7 @@ private:
 private slots:
      void queryQRCode();
      void onTimerPoll();
+     void doRemark(QString const&, QString const&, QString const&);
 public:
      explicit QQZone(QObject *parent = 0);
      void requestQRCode();
