@@ -32,13 +32,18 @@ private:
      void postLikeReq(QString const &uin, QString const &key,
                                     QString const &appid, QString const &type,
                                      QString const &curKey, QString const &uniKey);
+     QString jsObj2JSOn(QString const&);
+     QString &dealContent(QString &content);
+     QString getMyUin();
 private slots:
      void queryQRCode();
      void onTimerPoll();
+     void pollForNewFeed();
      void doRemark(QString const&, QString const&, QString const&);
+     void doReply(QString const &, int count);
 public:
      explicit QQZone(QObject *parent = 0);
      void requestQRCode();
-     void testFeed();
+     void testFeed(int count);
 };
 #endif // QQZONE_H

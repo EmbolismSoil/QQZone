@@ -94,13 +94,28 @@ void QQZone::requestQRCode()
     _Http->request(urlStr, cb);
 }
 
-void QQZone::testFeed()
+void QQZone::testFeed(int count)
 {
-#if 0
-    QUrl url("http://user.qzone.qq.com/p/ic2.s21/cgi-bin/feeds/feeds2_html_pav_all?\
+#if 1
+    QUrl url(QString("http://user.qzone.qq.com/p/ic2.s21/cgi-bin/feeds/feeds2_html_pav_all?\
 uin=743703241&begin_time=0&end_time=0&getappnotification=1&getnotifi=1&\
 has_get_key=0&offset=0&set=1&count=10&useutf8=1&outputhtmlfeed=1&scope=1&\
-g_tk=633031855").arg();
+g_tk=%1").arg(genG_tk()));
+     QNetworkRequest req(url);
+     req.setRawHeader(QByteArray("Cookie"), QByteArray::fromStdString(cookieString().toStdString()));
+     _Http->request(req, [this, count]{
+                                          parseCookie();
+                                         auto reply = _Http->getReply();
+                                         auto buf =  reply->readAll();
+                                         QString str(buf);
+                                         QString pattern("_Callback\\((.*)\\)");
+                                         QRegExp rex(pattern);
+                                         rex.indexIn(str);
+                                         auto jsonString = jsObj2JSOn(rex.cap(1));
+                                         doReply(jsonString, count);
+                                         //std::cout << jsonString.toStdString() << std::endl;
+                                         return true;
+                                     });
 #endif
 }
 
@@ -217,7 +232,7 @@ void QQZone::doLike(QString &jsonStr)
         QRegExp rex(parttern);
         rex.setMinimal(true);
         rex.indexIn(html);
-        std::string content = rex.cap(1).toStdString();
+        auto content = rex.cap(1);
         _Robot->request(rex.cap(1), uin ,[this, topicId, uin]{
             auto ptr = _Robot->getReply();
             if (!ptr->isReadable())
@@ -237,7 +252,7 @@ void QQZone::doLike(QString &jsonStr)
         });
         std::cout << "nickNmae = " << nickName.toStdString()
                                 << "  uin = " << uin.toStdString()
-                                 << " content : " << content << std::endl;
+                                 << " content : " << dealContent(content).toStdString()  << std::endl;
     }
     return ;
 }
@@ -247,14 +262,7 @@ void QQZone::postLikeReq(const QString &uin, const QString &key,
                                         QString const &curKey, QString const &uniKey)
 {
     Q_UNUSED(uin);
-    QNetworkCookie uincookie(QByteArray("uin"), QByteArray(""));
-     auto uinPos = std::find(_cookies->begin(), _cookies->end(), uincookie);
-     QString fullUin(uinPos->value());
-     QString opuin;
-     for (auto pos = fullUin.begin() + 2; pos != fullUin.end(); ++pos){
-         opuin.push_back(*pos);
-     }
-
+    auto opuin = getMyUin();
     QString url = QString ("http://w.qzone.qq.com/cgi-bin/likes/internal_dolike_app?g_tk=%1").arg(genG_tk());
     QNetworkRequest req(url);
     auto table = QString("qzreferrer=http://user.qzone.qq.com/%1&opuin=%1&\
@@ -280,6 +288,7 @@ typeid=%5&fid=%6&active=0&fupdate=1").arg(opuin).arg(uniKey).arg(curKey).arg(app
     //active:0
     //fupdate:1
 }
+
 
 void QQZone::queryQRCode()
 {
@@ -315,6 +324,7 @@ para=izone&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=%1&js_ver=10157
                                                                   QByteArray::fromStdString(cookieString().toStdString()));
                                                   _Http->request(req, [this]{
                                                                                          parseCookie();
+                                                                                         connect(_timer.get(), SIGNAL(timeout()), this, SLOT(pollForNewFeed()));
                                                                                          connect(_timer.get(), SIGNAL(timeout()), this, SLOT(onTimerPoll()));
                                                                                          _timer->start(1000*5);
                                                                                          return true;
@@ -327,13 +337,7 @@ para=izone&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=%1&js_ver=10157
 
 void QQZone::onTimerPoll()
 {
-    QNetworkCookie cookie(QByteArray("uin"), QByteArray(""));
-     auto uinPos = std::find(_cookies->begin(), _cookies->end(), cookie);
-     QString fullUin(uinPos->value());
-     QString uin;
-     for (auto pos = fullUin.begin() + 2; pos != fullUin.end(); ++pos){
-         uin.push_back(*pos);
-     }
+     auto uin = getMyUin();
      //QString uin(fullUin.begin()+2, fullUin.end());
      QUrl url(QString("http://user.qzone.qq.com/p/ic2.s21/cgi-bin/feeds/feeds3_html_more?uin=%1&scope=0&view=1&daylist=&\
 uinlist=&gid=&flag=1&filter=all&applist=all&refresh=0&aisortEndTime=0&aisortOffset=0&getAisort=0&aisortBeginTime=0&pagenum=1&\
@@ -352,28 +356,84 @@ useutf8=1&outputhtmlfeed=1&getob=1&g_tk=%2").arg(uin).arg(genG_tk()));
                                          QString pattern("_Callback\\((.*)\\)");
                                          QRegExp rex(pattern);
                                          rex.indexIn(*strBuf);
-                                         QJSEngine engine;
-                                         QString directive("(function(){var obj = ");
-                                         directive =  directive + rex.cap(1) + ";";
-                                         directive =  directive + "return  JSON.stringify(obj);})";
-                                         auto value = engine.evaluate(directive);
-                                         auto jsonString = value.call().toString();
+                                         auto jsonString = jsObj2JSOn(rex.cap(1));
                                          doLike(jsonString);
                                          return true;
      });
 }
 
+QString QQZone::jsObj2JSOn(QString const &str)
+{
+    QJSEngine engine;
+    QString directive("(function(){var obj = ");
+    directive =  directive +str + ";";
+    directive =  directive + "return  JSON.stringify(obj);})";
+    auto value = engine.evaluate(directive);
+    auto jsonString = value.call().toString();
+
+    return jsonString;
+}
+
+QString &QQZone::dealContent(QString &content)
+{
+    QRegExp rex;
+    rex.setMinimal(true);
+    rex.setPattern("<img src=.*/>");
+    while(rex.indexIn(content) != -1)
+        content.replace(rex, QString(""));
+    return content;
+}
+
+void QQZone::pollForNewFeed()
+{
+    auto urlStr = QString("http://user.qzone.qq.com/p/ic2.s21/cgi-bin/feeds/cgi_get_feeds_count.cgi?\
+uin=%1&g_tk=%2").arg(getMyUin()).arg(genG_tk());
+    QUrl url(urlStr);
+    QNetworkRequest req(url);
+    req.setRawHeader(QByteArray("Cookie"),
+                    QByteArray::fromStdString(cookieString().toStdString()));
+    _Http->request(req, [this]{
+                                        auto reply = _Http->getReply();
+                                        auto buf = reply->readAll();
+                                        auto strBuf = std::make_shared<QString>(buf);
+                                        //qDebug() << *strBuf;
+                                        QString pattern("callback\\((.*)\\)");
+                                        QRegExp rex(pattern);
+                                        rex.indexIn(*strBuf);
+                                        auto jsonString = jsObj2JSOn(rex.cap(1));
+                                        auto  jsonbuf = QByteArray::fromStdString(jsonString.toStdString());
+                                        auto  jsonDoc = QJsonDocument::fromJson(jsonbuf);
+                                        if (!jsonDoc.isObject())
+                                            return true;
+                                        QJsonValue data = jsonDoc.object()["data"];
+                                        if (!data.isObject())
+                                            return true;
+                                        auto countReply =  data.toObject()["replyHostFeeds_new_cnt"].toInt();
+                               //         auto countNewFeed = data.toObject()["friendFeeds_new_cnt"].toInt();
+                                        if (countReply > 0)
+                                             testFeed(countReply);
+                                  //      if (countNewFeed > 0)
+                                     //       onTimerPoll();
+                                        return true;
+                                    });
+}
+
+QString QQZone::getMyUin()
+{
+    QNetworkCookie cookie(QByteArray("uin"), QByteArray(""));
+     auto uinPos = std::find(_cookies->begin(), _cookies->end(), cookie);
+     QString fullUin(uinPos->value());
+     QString uin;
+     for (auto pos = fullUin.begin() + 2; pos != fullUin.end(); ++pos){
+         uin.push_back(*pos);
+     }
+     return uin;
+}
+
 void QQZone::doRemark(QString const &hostUin,QString const &topicId,
                                         QString const &words)
 {
-    QNetworkCookie uincookie(QByteArray("uin"), QByteArray(""));
-     auto uinPos = std::find(_cookies->begin(), _cookies->end(), uincookie);
-     QString fullUin(uinPos->value());
-     QString opuin;
-     for (auto pos = fullUin.begin() + 2; pos != fullUin.end(); ++pos){
-         opuin.push_back(*pos);
-     }
-
+    auto opuin = getMyUin();
     QUrl url(QString("http://taotao.qzone.qq.com/cgi-bin/emotion_cgi_re_feeds?g_tk=%1").arg(genG_tk()));
     auto table = QString("qzreferrer=http://user.qzone.qq.com/%1&topicId=%2&\
 feedsType=100&inCharset=utf-8&outCharset=utf-8&plat=qzone&source=ic&\
@@ -404,5 +464,51 @@ richval=&richtype=&private=0&paramstr=1").arg(opuin).arg(topicId).arg(hostUin).a
 //richval:
 //richtype:
 //private:0
-//paramstr:1
+    //paramstr:1
+}
+
+void QQZone::doReply(const QString &jsonStr,int count)
+{
+    auto  buf = QByteArray::fromStdString(jsonStr.toStdString());
+    auto  jsonDoc = QJsonDocument::fromJson(buf);
+
+    QJsonValue  globalData = (jsonDoc.object())["data"];
+    if (!globalData.isObject())
+        return;
+    auto dataObj  = globalData.toObject();
+    QJsonValue data = dataObj["data"];
+    if (!data.isArray())
+        return;
+    QJsonArray dataArray = data.toArray();
+    for (auto iter : dataArray){
+        if(count < 1)
+            return;
+        --count;
+        if (!iter.isObject())
+            continue;
+        QString nickName = iter.toObject()["nickname"].toString();
+        QString uin = iter.toObject()["uin"].toString();
+        QString key = iter.toObject()["key"].toString();
+        QString appid = iter.toObject()["appid"].toString();
+        QString type = iter.toObject()["typeid"].toString();   //
+        QString html = iter.toObject()["html"].toString();
+
+        if(type != QString("2") && type != QString("3"))
+            continue;
+
+        auto parttern = QString("%1</a>&nbsp;回复&nbsp;<a class=\"c_tx q_namecard\".*地瓜叶爸爸.*&nbsp; :(.*)<div class=\"comments-op\">").arg(nickName);
+        QRegExp rex(parttern);
+        rex.setMinimal(true);
+        if(rex.indexIn(html) == -1){
+            auto remarkParttern = QString("<a class=\"c_tx q_namecard\".*>%1</a>&nbsp; :(.*)<div class=\"comments-op\">").arg(nickName);
+            rex.setPattern(remarkParttern);
+            rex.indexIn(html);
+        }
+        if(rex.cap(1).size() < 1)
+            continue;
+        //std::cout << "nickname = " << nickName.toStdString() << " typeid =  " << type.toStdString() << std::endl;
+        auto content = rex.cap(1);
+        dealContent(content);
+        std::cout << nickName.toStdString() << " : " << content.toStdString() << std::endl;
+    }
 }
