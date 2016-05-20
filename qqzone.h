@@ -26,7 +26,7 @@ private:
      QString genSSID(QString prefix = QString());
      void requestCookies();
      void parseCookie();
-     QString genG_tk(QString const &p_skey);
+     QString genG_tk();
      QString cookieString();
      void doLike(QString  &jsonStr);
      void postLikeReq(QString const &uin, QString const &key,
@@ -39,5 +39,6 @@ private slots:
 public:
      explicit QQZone(QObject *parent = 0);
      void requestQRCode();
+     void testFeed();
 };
 #endif // QQZONE_H

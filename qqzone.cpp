@@ -12,6 +12,19 @@
 #include <myhttp.h>
 #include <regex>
 
+namespace std {
+    template <>
+       auto find ( QList<QNetworkCookie>::iterator first,
+                                    decltype(first) last, const QNetworkCookie& value ) -> decltype(first){
+            while(first != last){
+                if (first->name() == value.name())
+                    return first;
+                ++first;
+            }
+            return last;
+       }
+}
+
 QQZone::QQZone(QObject *parent):
     _Http(std::make_shared<MyHttp>(parent)),
     _label(std::make_shared<QLabel>()),
@@ -81,6 +94,16 @@ void QQZone::requestQRCode()
     _Http->request(urlStr, cb);
 }
 
+void QQZone::testFeed()
+{
+#if 0
+    QUrl url("http://user.qzone.qq.com/p/ic2.s21/cgi-bin/feeds/feeds2_html_pav_all?\
+uin=743703241&begin_time=0&end_time=0&getappnotification=1&getnotifi=1&\
+has_get_key=0&offset=0&set=1&count=10&useutf8=1&outputhtmlfeed=1&scope=1&\
+g_tk=633031855").arg();
+#endif
+}
+
 QString QQZone::genSSID(QString prefix)
 {
     QJSEngine engine;
@@ -90,8 +113,11 @@ QString QQZone::genSSID(QString prefix)
     return str;
 }
 
-QString QQZone::genG_tk(const QString &p_skey)
+QString QQZone::genG_tk()
 {
+    QNetworkCookie cookie(QByteArray("p_skey"), QByteArray(""));
+    auto p_skeyPos = std::find(_cookies->begin(), _cookies->end(), cookie);
+    QString p_skey(p_skeyPos->value());
     QJSEngine engine;
     QJSValue func = engine.evaluate("(function(str){var hash = 5381;for (var i = 0,len = str.length; i < len; ++i) hash += (hash << 5) + str.charCodeAt(i);return String(hash & 2147483647);})");
     QJSValueList args;
@@ -101,18 +127,6 @@ QString QQZone::genG_tk(const QString &p_skey)
     return g_tk.toString();
 }
 
-namespace std {
-    template <>
-       auto find ( QList<QNetworkCookie>::iterator first,
-                                    decltype(first) last, const QNetworkCookie& value ) -> decltype(first){
-            while(first != last){
-                if (first->name() == value.name())
-                    return first;
-                ++first;
-            }
-            return last;
-       }
-}
 void QQZone::parseCookie()
 {
     auto reply = _Http->getReply();
@@ -241,9 +255,7 @@ void QQZone::postLikeReq(const QString &uin, const QString &key,
          opuin.push_back(*pos);
      }
 
-    QNetworkCookie cookie(QByteArray("p_skey"), QByteArray(""));
-    auto p_skeyPos = std::find(_cookies->begin(), _cookies->end(), cookie);
-    QString url = QString ("http://w.qzone.qq.com/cgi-bin/likes/internal_dolike_app?g_tk=%1").arg(genG_tk(QString(p_skeyPos->value())));
+    QString url = QString ("http://w.qzone.qq.com/cgi-bin/likes/internal_dolike_app?g_tk=%1").arg(genG_tk());
     QNetworkRequest req(url);
     auto table = QString("qzreferrer=http://user.qzone.qq.com/%1&opuin=%1&\
 unikey=%2&curkey=%3&form=1&appid=%4&\
@@ -317,8 +329,6 @@ void QQZone::onTimerPoll()
 {
     QNetworkCookie cookie(QByteArray("uin"), QByteArray(""));
      auto uinPos = std::find(_cookies->begin(), _cookies->end(), cookie);
-     cookie.setName(QByteArray("p_skey"));
-     auto p_skeyPos = std::find(_cookies->begin(), _cookies->end(), cookie);
      QString fullUin(uinPos->value());
      QString uin;
      for (auto pos = fullUin.begin() + 2; pos != fullUin.end(); ++pos){
@@ -328,7 +338,7 @@ void QQZone::onTimerPoll()
      QUrl url(QString("http://user.qzone.qq.com/p/ic2.s21/cgi-bin/feeds/feeds3_html_more?uin=%1&scope=0&view=1&daylist=&\
 uinlist=&gid=&flag=1&filter=all&applist=all&refresh=0&aisortEndTime=0&aisortOffset=0&getAisort=0&aisortBeginTime=0&pagenum=1&\
 externparam=&firstGetGroup=0&icServerTime=0&mixnocache=0&scene=0&begintime=0&count=10&dayspac=0&sidomain=ctc.qzonestyle.gtimg.cn&\
-useutf8=1&outputhtmlfeed=1&getob=1&g_tk=%2").arg(uin).arg(genG_tk(QString(p_skeyPos->value()))));
+useutf8=1&outputhtmlfeed=1&getob=1&g_tk=%2").arg(uin).arg(genG_tk()));
     // qDebug() << url.toString();
      QNetworkRequest req(url);
      req.setRawHeader(QByteArray("Cookie"),
@@ -364,9 +374,7 @@ void QQZone::doRemark(QString const &hostUin,QString const &topicId,
          opuin.push_back(*pos);
      }
 
-    QNetworkCookie cookie(QByteArray("p_skey"), QByteArray(""));
-    auto p_skeyPos = std::find(_cookies->begin(), _cookies->end(), cookie);
-    QUrl url(QString("http://taotao.qzone.qq.com/cgi-bin/emotion_cgi_re_feeds?g_tk=%1").arg(genG_tk(QString(p_skeyPos->value()))));
+    QUrl url(QString("http://taotao.qzone.qq.com/cgi-bin/emotion_cgi_re_feeds?g_tk=%1").arg(genG_tk()));
     auto table = QString("qzreferrer=http://user.qzone.qq.com/%1&topicId=%2&\
 feedsType=100&inCharset=utf-8&outCharset=utf-8&plat=qzone&source=ic&\
 hostUin=%3&isSignIn=&platformid=&uin=%1&format=fs&ref=feeds&content=%4&\
