@@ -15,7 +15,8 @@ QQZone::QQZone(QObject *parent):
     _Http(std::make_shared<MyHttp>(parent)),
     _label(std::make_shared<QLabel>()),
     _cookies(std::make_shared<QList<QNetworkCookie> >()),
-    _timer(std::make_shared<QTimer>())
+    _timer(std::make_shared<QTimer>()),
+    _doLikeSet(new std::set<QString>())
 {    
    QString pgv_info("pgv_info");
    auto pgv_info_value = genSSID("ssid=s");
@@ -166,7 +167,12 @@ void QQZone::doLike(QString &jsonStr)
         QString appid = iter.toObject()["appid"].toString();
         QString type = iter.toObject()["typeid"].toString();
         QString html = iter.toObject()["html"].toString();
-        //<divclass="f-info">...content</div>
+        //.*</i>取消赞\\([0-9]*\\)</a>.*
+         QRegExp rexDid(".*</i>取消赞\\([0-9]*\\)</a>.*");
+        if (rexDid.indexIn(html) != -1){
+            //std::cout << html.toStdString() << std::endl;
+            continue;
+        }
         postLikeReq(uin, key, appid, type);
         QString parttern("<div class=\"f-info\">(.+)</div>");
         QRegExp rex(parttern, Qt::CaseInsensitive, QRegExp::W3CXmlSchema11);

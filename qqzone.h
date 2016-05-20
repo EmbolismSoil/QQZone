@@ -6,6 +6,9 @@
 #include <myhttp.h>
 #include <QJSEngine>
 #include <QDebug>
+#include <memory>
+#include <set>
+
 class QQZone: public QObject
 {
     Q_OBJECT
@@ -14,6 +17,7 @@ private:
      std::shared_ptr<QLabel> _label;
      std::shared_ptr<QList<QNetworkCookie> > _cookies;
      std::shared_ptr<QTimer> _timer;
+     std::shared_ptr<std::set<QString> > _doLikeSet;
      QString genSSID(QString prefix = QString());
      void requestCookies();
      void parseCookie();
