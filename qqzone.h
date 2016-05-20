@@ -25,7 +25,8 @@ private:
      QString cookieString();
      void doLike(QString  &jsonStr);
      void postLikeReq(QString const &uin, QString const &key,
-                                    QString const &appid, QString const &type);
+                                    QString const &appid, QString const &type,
+                                     QString const &curKey, QString const &uniKey);
 private slots:
      void queryQRCode();
      void onTimerPoll();

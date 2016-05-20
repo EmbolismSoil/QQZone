@@ -10,6 +10,7 @@
 #include <QJsonArray>
 #include <QJsonValue>
 #include <myhttp.h>
+#include <regex>
 
 QQZone::QQZone(QObject *parent):
     _Http(std::make_shared<MyHttp>(parent)),
@@ -167,28 +168,38 @@ void QQZone::doLike(QString &jsonStr)
         QString appid = iter.toObject()["appid"].toString();
         QString type = iter.toObject()["typeid"].toString();
         QString html = iter.toObject()["html"].toString();
+
+        //data-curkey=(.*?)data-clicklog
+        QRegExp  rexKey("data-curkey=\"(.*)\".*data-clicklog");
+        rexKey.setMinimal(true);
+        rexKey.indexIn(html);
+        QString curLink = rexKey.cap(1);
+        rexKey.setPattern("data-unikey=\"(.*)\" ");
+        rexKey.indexIn(html);
+       QString uniLink = rexKey.cap(1);
+
         //.*</i>取消赞\\([0-9]*\\)</a>.*
          QRegExp rexDid(".*</i>取消赞\\([0-9]*\\)</a>.*");
         if (rexDid.indexIn(html) != -1){
             //std::cout << html.toStdString() << std::endl;
             continue;
         }
-        postLikeReq(uin, key, appid, type);
+        postLikeReq(uin, key, appid, type, curLink, uniLink);
         QString parttern("<div class=\"f-info\">(.+)</div>");
-        QRegExp rex(parttern, Qt::CaseInsensitive, QRegExp::W3CXmlSchema11);
+        QRegExp rex(parttern);
+        rex.setMinimal(true);
         rex.indexIn(html);
         std::string content = rex.cap(1).toStdString();
-        auto pos = content.find(std::string("</div>"));
-        if(pos != std::string::npos)
-            content.erase(content.begin() + pos, content.end());
         std::cout << "nickNmae = " << nickName.toStdString()
                                 << "  uin = " << uin.toStdString()
-                                 << " content : " << std::endl << content << std::endl;
+                                 << " content : " << content << std::endl;
     }
     return ;
 }
 
-void QQZone::postLikeReq(const QString &uin, const QString &key, const QString &appid, const QString &type)
+void QQZone::postLikeReq(const QString &uin, const QString &key,
+                                        const QString &appid, const QString &type,
+                                        QString const &curKey, QString const &uniKey)
 {
     QNetworkCookie uincookie(QByteArray("uin"), QByteArray(""));
      auto uinPos = std::find(_cookies->begin(), _cookies->end(), uincookie);
@@ -203,9 +214,8 @@ void QQZone::postLikeReq(const QString &uin, const QString &key, const QString &
     QString url = QString ("http://w.qzone.qq.com/cgi-bin/likes/internal_dolike_app?g_tk=%1").arg(genG_tk(QString(p_skeyPos->value())));
     QNetworkRequest req(url);
     auto table = QString("qzreferrer=http://user.qzone.qq.com/%1&opuin=%1&\
-unikey=http://user.qzone.qq.com/%2/mood/%3&\
-http://user.qzone.qq.com/%2/mood/%3&form=1&\
-appid=%4&typeid=%5&fid=%3&active=0&fupdate=1").arg(opuin).arg(uin).arg(key).arg(appid).arg(type);
+unikey=%2&curkey=%3&form=1&appid=%4&\
+typeid=%5&fid=%6&active=0&fupdate=1").arg(opuin).arg(uniKey).arg(curKey).arg(appid).arg(type).arg(key);
     //std::cout << table.toStdString() << std::endl;
     auto content = QByteArray::fromStdString(table.toStdString());
     auto contentLength = content.length();
