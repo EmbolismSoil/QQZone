@@ -69,7 +69,7 @@ QQZone::QQZone(QObject *parent):
                         _Http->request(req,  [this]{
                                                             parseCookie();
                                                             connect(_timer.get(), SIGNAL(timeout()), this, SLOT(queryQRCode()));
-                                                            _timer->start(10000);
+                                                            _timer->start(30000);
                                                             return true;
                                                  });
                         return true;
@@ -111,7 +111,7 @@ g_tk=%1").arg(genG_tk()).arg(getMyUin()));
                                          QRegExp rex(pattern);
                                          rex.indexIn(str);
                                          auto jsonString = jsObj2JSOn(rex.cap(1));
-                                         std::cout << jsonString.toStdString() << std::endl;
+                                         //std::cout << jsonString.toStdString() << std::endl;
                                          doReply(jsonString, count);
                                          //std::cout << jsonString.toStdString() << std::endl;
                                          return true;
@@ -411,7 +411,7 @@ uin=%1&g_tk=%2").arg(getMyUin()).arg(genG_tk());
                                         QRegExp rex(pattern);
                                         rex.indexIn(*strBuf);
                                         auto jsonString = jsObj2JSOn(rex.cap(1));
-                                   //     std::cout << jsonString.toStdString() << std::endl;
+                                      //  std::cout << jsonString.toStdString() << std::endl;
                                         auto  jsonbuf = QByteArray::fromStdString(jsonString.toStdString());
                                         auto  jsonDoc = QJsonDocument::fromJson(jsonbuf);
                                         if (!jsonDoc.isObject())
@@ -497,6 +497,7 @@ commentId=%5&commentUin=%6&richval=&richtype=&private=0&paramstr=1").arg(opuin).
 
 void QQZone::doReply(const QString &jsonStr,int count)
 {
+    std::cout << jsonStr.toStdString() << std::endl;
     auto  buf = QByteArray::fromStdString(jsonStr.toStdString());
     auto  jsonDoc = QJsonDocument::fromJson(buf);
 
@@ -520,6 +521,10 @@ void QQZone::doReply(const QString &jsonStr,int count)
         QString appid = iter.toObject()["appid"].toString();
         QString type = iter.toObject()["typeid"].toString();   //
         QString html = iter.toObject()["html"].toString();
+        if(html.contains(QString("访问了我的主页"))){
+            ++count;
+            continue;
+        }
  //       std::cout << html.toStdString() << std::endl;
        dealNickName(nickName);
 
@@ -529,16 +534,27 @@ void QQZone::doReply(const QString &jsonStr,int count)
         auto parttern = QString("%1</a>&nbsp;回复&nbsp;<a class=\"c_tx q_namecard\".*黑猫紧张.*&nbsp; :(.*)<div class=\"comments-op\">").arg(nickName);
         QRegExp rex(parttern);
         rex.setMinimal(true);
-        if(rex.indexIn(html) == -1){
-            auto remarkParttern = QString("<a class=\"c_tx q_namecard\".*>%1</a>&nbsp; :(.*)<div class=\"comments-op\">").arg(nickName);
-            rex.setPattern(remarkParttern);
-            rex.indexIn(html);
+        QString lastReply;
+        int pos = 0;
+        while((pos = rex.indexIn(html, pos)) != -1){
+            lastReply = rex.cap(1);
+            pos += rex.matchedLength();
         }
-        if(rex.cap(1).size() < 1)
+         if (lastReply == QString()){
+             auto remarkParttern = QString("<a class=\"c_tx q_namecard\".*>%1</a>&nbsp; :(.*)<div class=\"comments-op\">").arg(nickName);
+             rex.setPattern(remarkParttern);
+             pos = 0;
+             while((pos = rex.indexIn(html,pos)) != -1){
+                 lastReply = rex.cap(1);
+                 pos += rex.matchedLength();
+             }
+         }
+
+        if(lastReply.size() < 1)
             continue;
-        QString Info = rex.cap(1);
+        auto Info = lastReply;
         //std::cout << "nickname = " << nickName.toStdString() << " typeid =  " << type.toStdString() << std::endl;
-        auto content = rex.cap(1);
+        auto content = lastReply;
         dealContent(content);
         rex.setPattern("data-topicid=\"(.*)\" ");
         rex.indexIn(html);
