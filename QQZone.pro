@@ -14,6 +14,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = QQZone
 TEMPLATE = app
+target.path=/home/lee/testTarget
+INSTALLS=target
 
 SOURCES += main.cpp \
     qqhttp.cpp \
