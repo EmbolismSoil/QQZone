@@ -329,7 +329,7 @@ para=izone&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=%1&js_ver=10157
                                                   _Http->request(req, [this]{
                                                                                          parseCookie();
                                                                                          connect(_timer.get(), SIGNAL(timeout()), this, SLOT(pollForNewFeed()));
-                                                                                         connect(_timer.get(), SIGNAL(timeout()), this, SLOT(onTimerPoll()));
+                                                                                       //  connect(_timer.get(), SIGNAL(timeout()), this, SLOT(onTimerPoll()));
                                                                                          _timer->start(1000*5);
                                                                                          return true;
                                                                            });
@@ -424,11 +424,11 @@ uin=%1&g_tk=%2").arg(getMyUin()).arg(genG_tk());
                                         if (!data.isObject())
                                             return true;
                                         auto countReply =  data.toObject()["replyHostFeeds_new_cnt"].toInt();
-                               //         auto countNewFeed = data.toObject()["friendFeeds_new_cnt"].toInt();
+                                        auto countNewFeed = data.toObject()["friendFeeds_new_cnt"].toInt();
                                         if (countReply > 0)
                                              testFeed(countReply);
-                                  //      if (countNewFeed > 0)
-                                     //       onTimerPoll();
+                                        if (countNewFeed > 0)
+                                            onTimerPoll();
                                         return true;
                                     });
 }
@@ -461,14 +461,14 @@ feedsType=100&inCharset=utf-8&outCharset=utf-8&plat=qzone&source=ic&\
 hostUin=%3&isSignIn=&platformid=&uin=%1&format=fs&ref=feeds&content=%4&\
 richval=&richtype=&private=0&paramstr=1").arg(opuin).arg(topicId).arg(hostUin).arg(words);
         table = tableNC;
-        std::cout << table.toStdString() << std::endl;
+       // std::cout << table.toStdString() << std::endl;
     }else{
         auto tableC = QString("qzreferrer=http://user.qzone.qq.com/%1&topicId=%2&\
 feedsType=100&inCharset=utf-8&outCharset=utf-8&plat=qzone&source=ic&\
 hostUin=%3&isSignIn=&platformid=&uin=%1&format=fs&ref=feeds&content=%4&\
 commentId=%5&commentUin=%6&richval=&richtype=&private=0&paramstr=1").arg(opuin).arg(topicId).arg(hostUin).arg(words).arg(commitId).arg(opuin);
           table = tableC;
-           std::cout << table.toStdString() << std::endl;
+          // std::cout << table.toStdString() << std::endl;
     }
 
      QByteArray content = QByteArray::fromStdString(table.toStdString());
@@ -501,7 +501,7 @@ commentId=%5&commentUin=%6&richval=&richtype=&private=0&paramstr=1").arg(opuin).
 
 void QQZone::doReply(const QString &jsonStr,int count)
 {
-    std::cout << jsonStr.toStdString() << std::endl;
+    //std::cout << jsonStr.toStdString() << std::endl;
     auto  buf = QByteArray::fromStdString(jsonStr.toStdString());
     auto  jsonDoc = QJsonDocument::fromJson(buf);
 

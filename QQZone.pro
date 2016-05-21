@@ -15,7 +15,6 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = QQZone
 TEMPLATE = app
 
-
 SOURCES += main.cpp \
     qqhttp.cpp \
     qqzone.cpp \
