@@ -332,7 +332,7 @@ para=izone&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=%1&js_ver=10157
                                                                                          connect(_timer.get(), SIGNAL(timeout()), this, SLOT(pollForNewFeed()));
                                                                                        //  connect(_timer.get(), SIGNAL(timeout()), this, SLOT(onTimerPoll()));
                                                                                          _timer->start(1000*5);
-                                                                                         _Http->setPollTime(1000*5);
+                                                                                         _Http->setPollTime(1000*2);
                                                                                          return true;
                                                                            });
                                               }
@@ -568,9 +568,10 @@ void QQZone::doReply(const QString &jsonStr,int count)
         QString topicId = rex.cap(1);
         std::cout << nickName.toStdString() << " : " << content.toStdString() << std::endl;
         //t2_tid=[0-9]
-        rex.setPattern("t2_tid=([0-9])");
+        rex.setPattern("t2_tid=([0-9]*)&amp");
         rex.indexIn(html);
-        auto commitId = rex.cap(1);
+        QString commitId = rex.cap(1);
+        //std::cout << "html = " << html.toStdString() << "commitId = " << commitId.toStdString() << std::endl;
         //t1_uin=(.*)&amp
         rex.setPattern("t1_uin=(.*)&amp");
         rex.indexIn(html);
