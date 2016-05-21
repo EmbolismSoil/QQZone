@@ -316,6 +316,7 @@ para=izone&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=%1&js_ver=10157
                                               QRegExp rex(pattern);
                                               int pos = 0;
                                               rex.indexIn(buf, pos);
+
                                               if(rex.cap(5) == "登录成功！"){
                                                   _myNickName = rex.cap(6);
                                                   dealNickName(_myNickName);
@@ -331,6 +332,7 @@ para=izone&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=%1&js_ver=10157
                                                                                          connect(_timer.get(), SIGNAL(timeout()), this, SLOT(pollForNewFeed()));
                                                                                        //  connect(_timer.get(), SIGNAL(timeout()), this, SLOT(onTimerPoll()));
                                                                                          _timer->start(1000*5);
+                                                                                         _Http->setPollTime(1000*5);
                                                                                          return true;
                                                                            });
                                               }
@@ -452,6 +454,7 @@ void QQZone::doRemark(QString const &hostUin,QString const &topicId,
                                         QString const &words, QString const &commitId,
                                         QString const &commitUin)
 {
+  //  Q_UNUSED(commitUin);
     auto opuin = getMyUin();
     QString table;
     QUrl url(QString("http://taotao.qzone.qq.com/cgi-bin/emotion_cgi_re_feeds?g_tk=%1").arg(genG_tk()));
@@ -466,9 +469,9 @@ richval=&richtype=&private=0&paramstr=1").arg(opuin).arg(topicId).arg(hostUin).a
         auto tableC = QString("qzreferrer=http://user.qzone.qq.com/%1&topicId=%2&\
 feedsType=100&inCharset=utf-8&outCharset=utf-8&plat=qzone&source=ic&\
 hostUin=%3&isSignIn=&platformid=&uin=%1&format=fs&ref=feeds&content=%4&\
-commentId=%5&commentUin=%6&richval=&richtype=&private=0&paramstr=1").arg(opuin).arg(topicId).arg(hostUin).arg(words).arg(commitId).arg(opuin);
+commentId=%5&commentUin=%6&richval=&richtype=&private=0&paramstr=1").arg(opuin).arg(topicId).arg(hostUin).arg(words).arg(commitId).arg(commitUin);
           table = tableC;
-          // std::cout << table.toStdString() << std::endl;
+           std::cout << table.toStdString() << std::endl;
     }
 
      QByteArray content = QByteArray::fromStdString(table.toStdString());
@@ -535,7 +538,7 @@ void QQZone::doReply(const QString &jsonStr,int count)
         if(type != QString("2") && type != QString("3"))
             continue;
 
-        auto parttern = QString("%1</a>&nbsp;回复&nbsp;<a class=\"c_tx q_namecard\".*%2.*&nbsp; :(.*)<div class=\"comments-op\">").arg(nickName).arg(_myNickName);
+        auto parttern = QString("%1.*</a>&nbsp;回复&nbsp;<a class=\"c_tx q_namecard\".*%2.*&nbsp; :(.*)<div class=\"comments-op\">").arg(nickName).arg(_myNickName);
         QRegExp rex(parttern);
         rex.setMinimal(true);
         QString lastReply;
@@ -545,7 +548,7 @@ void QQZone::doReply(const QString &jsonStr,int count)
             pos += rex.matchedLength();
         }
          if (lastReply == QString()){
-             auto remarkParttern = QString("<a class=\"c_tx q_namecard\".*>%1</a>&nbsp; :(.*)<div class=\"comments-op\">").arg(nickName);
+             auto remarkParttern = QString("<a class=\"c_tx q_namecard\".*>%1.*</a>&nbsp; :(.*)<div class=\"comments-op\">").arg(nickName);
              rex.setPattern(remarkParttern);
              pos = 0;
              while((pos = rex.indexIn(html,pos)) != -1){
@@ -572,8 +575,11 @@ void QQZone::doReply(const QString &jsonStr,int count)
         rex.setPattern("t1_uin=(.*)&amp");
         rex.indexIn(html);
         auto HostUin = rex.cap(1);
+        rex.setPattern("t2_uin=(.*)&amp");
+        rex.indexIn(html);
+        auto commentUin = rex.cap(1);
 
-        _Robot->request(Info, uin ,[this, topicId, uin, nickName,commitId, HostUin]{
+        _Robot->request(Info, uin ,[this, topicId, uin, nickName,commitId, HostUin, commentUin]{
             auto ptr = _Robot->getReply();
             if (!ptr->isReadable())
                 return false;
@@ -589,7 +595,7 @@ void QQZone::doReply(const QString &jsonStr,int count)
                 }
             }
             auto words = QString("@{uin:%1,nick:%2,auto:1} %3").arg(uin).arg(nickName).arg(remark);
-            doRemark(HostUin, topicId, words, commitId, uin);
+            doRemark(HostUin, topicId, words, commitId, commentUin);
             return true;
         });
     }
