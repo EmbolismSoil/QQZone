@@ -31,7 +31,8 @@ QQZone::QQZone(QObject *parent):
     _cookies(std::make_shared<QList<QNetworkCookie> >()),
     _timer(std::make_shared<QTimer>()),
     _doLikeSet(new std::set<QString>()),
-    _Robot(std::make_shared<TulingRobot>("0d03cea08993d83703e7dfa0d31a0b7d"))
+    _Robot(std::make_shared<TulingRobot>("0d03cea08993d83703e7dfa0d31a0b7d")),
+    _myNickName()
 {    
    QString pgv_info("pgv_info");
    auto pgv_info_value = genSSID("ssid=s");
@@ -316,6 +317,9 @@ para=izone&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=%1&js_ver=10157
                                               int pos = 0;
                                               rex.indexIn(buf, pos);
                                               if(rex.cap(5) == "登录成功！"){
+                                                  _myNickName = rex.cap(6);
+                                                  dealNickName(_myNickName);
+                                                  std::cout << _myNickName.toStdString() << " 登录成功！"<< std::endl;
                                                   _timer->stop();
                                                   disconnect(_timer.get(), SIGNAL(timeout()), this, SLOT(queryQRCode()));
                                                   QUrl url(rex.cap(3));
@@ -531,7 +535,7 @@ void QQZone::doReply(const QString &jsonStr,int count)
         if(type != QString("2") && type != QString("3"))
             continue;
 
-        auto parttern = QString("%1</a>&nbsp;回复&nbsp;<a class=\"c_tx q_namecard\".*黑猫紧张.*&nbsp; :(.*)<div class=\"comments-op\">").arg(nickName);
+        auto parttern = QString("%1</a>&nbsp;回复&nbsp;<a class=\"c_tx q_namecard\".*%2.*&nbsp; :(.*)<div class=\"comments-op\">").arg(nickName).arg(_myNickName);
         QRegExp rex(parttern);
         rex.setMinimal(true);
         QString lastReply;

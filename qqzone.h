@@ -22,6 +22,7 @@ private:
      std::shared_ptr<QTimer> _timer;
      std::shared_ptr<std::set<QString> > _doLikeSet;
      std::shared_ptr<TulingRobot> _Robot;
+     QString _myNickName;
 
      QString genSSID(QString prefix = QString());
      void requestCookies();
