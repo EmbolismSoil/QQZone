@@ -46,7 +46,6 @@ bool MyHttp::doRequest()
 
     auto request =  _requests->front();
     auto req = request.req;
-    auto buf = request.buf;
     auto method = request.method;
     auto cb = request.cb;
     _requests->pop_front();
@@ -63,6 +62,7 @@ bool MyHttp::doRequest()
         if(method == GET){
             _Http->get(req);
         }else if (method == POST){
+            auto buf = request.buf;
             _Http->post(req, buf);
         }else{
             return false;
