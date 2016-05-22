@@ -40,7 +40,7 @@ bool TulingRobot::request(const QString &URL,QString const &id,
 
 void TulingRobot::readyReply(QNetworkReply *reply)
 {
-
+    Q_UNUSED(reply);
 }
 
 
