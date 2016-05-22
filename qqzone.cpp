@@ -36,37 +36,34 @@ QQZone::QQZone(QObject *parent):
 {    
    QString pgv_info("pgv_info");
    auto pgv_info_value = genSSID("ssid=s");
-   QNetworkCookie pgv_pvi_Cookie(QByteArray::fromStdString(pgv_info.toStdString()),
-                                                        QByteArray::fromStdString(pgv_info_value.toStdString()));
+   QNetworkCookie pgv_pvi_Cookie(pgv_info.toUtf8(), pgv_info_value.toUtf8());
    _cookies->push_back(pgv_pvi_Cookie);
 
    QString pgv_pvid("pgv_pvid");
    auto pgv_pvid_value = genSSID();
-   QNetworkCookie pgv_si_Cookie(QByteArray::fromStdString(pgv_pvid.toStdString()),
-                                                      QByteArray::fromStdString(pgv_pvid_value.toStdString()));
+   QNetworkCookie pgv_si_Cookie(pgv_pvid.toUtf8(), pgv_pvid_value.toUtf8());
+
   _cookies->push_back(pgv_si_Cookie);
 
      auto cb = [this] {
                          QString pgv_pvi("pgv_pvi");
                          auto pgv_pvi_value = genSSID();
-                         QNetworkCookie pgv_pvi_Cookie(QByteArray::fromStdString(pgv_pvi.toStdString()),
-                                                                              QByteArray::fromStdString(pgv_pvi_value.toStdString()));
+                         QNetworkCookie pgv_pvi_Cookie(pgv_pvi.toUtf8(), pgv_pvi_value.toUtf8());
                          _cookies->push_back(pgv_pvi_Cookie);
 
                          QString pgv_si("pgv_si");
                          auto pgv_si_value = genSSID("s");
-                         QNetworkCookie pgv_si_Cookie(QByteArray::fromStdString(pgv_si.toStdString()),
-                                                                            QByteArray::fromStdString(pgv_si_value.toStdString()));
+                         QNetworkCookie pgv_si_Cookie(pgv_si.toUtf8(), pgv_si_value.toUtf8());
                         _cookies->push_back(pgv_si_Cookie);
 
                         QString refer("_qz_referrer");
                         QString referValue("i.qq.com");
-                        QNetworkCookie pgv_refer_Cookie(QByteArray::fromStdString(refer.toStdString()),
-                                                                           QByteArray::fromStdString(referValue.toStdString()));
+                        QNetworkCookie pgv_refer_Cookie(refer.toUtf8(), referValue.toUtf8());
+
                        _cookies->push_back(pgv_refer_Cookie);
                         parseCookie();
                         QNetworkRequest req(QUrl(QString("http://pingtcss.qq.com/pingd?dm=i.qq.com&pvi=464581632&si=s8405954560&url=/&arg=&ty=&rdm=&rurl=&rarg=&adt=&r2=52955029&r3=-1&r4=1&fl=19.0&scr=1366x768&scl=24-bit&lg=zh-cn&jv=&tz=-8&ct=&ext=adid=&pf=&random=1463636215321")));
-                        req.setRawHeader(QByteArray("Cookie"), QByteArray::fromStdString(cookieString().toStdString()));
+                        req.setRawHeader(QByteArray("Cookie"), cookieString().toUtf8());
                         _Http->request(req,  [this]{
                                                             parseCookie();
                                                             connect(_timer.get(), SIGNAL(timeout()), this, SLOT(queryQRCode()));
@@ -103,7 +100,7 @@ uin=%2&begin_time=0&end_time=0&getappnotification=1&getnotifi=1&\
 has_get_key=0&offset=0&set=1&count=10&useutf8=1&outputhtmlfeed=1&scope=1&\
 g_tk=%1").arg(genG_tk()).arg(getMyUin()));
      QNetworkRequest req(url);
-     req.setRawHeader(QByteArray("Cookie"), QByteArray::fromStdString(cookieString().toStdString()));
+     req.setRawHeader(QByteArray("Cookie"), cookieString().toUtf8());
      _Http->request(req, [this, count]{
                                          auto reply = _Http->getReply();
                                          auto buf =  reply->readAll();
@@ -181,7 +178,7 @@ QString QQZone::cookieString()
 void QQZone::doLike(QString &jsonStr)
 {
     //std::cout << jsonStr.toStdString() << std::endl;
-    auto  buf = QByteArray::fromStdString(jsonStr.toStdString());
+    auto  buf = jsonStr.toUtf8();
     auto  jsonDoc = QJsonDocument::fromJson(buf);
 
     QJsonValue  globalData = (jsonDoc.object())["data"];
@@ -270,9 +267,9 @@ void QQZone::postLikeReq(const QString &uin, const QString &key,
 unikey=%2&curkey=%3&form=1&appid=%4&\
 typeid=%5&fid=%6&active=0&fupdate=1").arg(opuin).arg(uniKey).arg(curKey).arg(appid).arg(type).arg(key);
     //std::cout << table.toStdString() << std::endl;
-    auto content = QByteArray::fromStdString(table.toStdString());
+    auto content = table.toUtf8();
     auto contentLength = content.length();
-    req.setRawHeader(QByteArray("Cookie"), QByteArray::fromStdString(cookieString().toStdString()));
+    req.setRawHeader(QByteArray("Cookie"), cookieString().toUtf8());
     req.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
     req.setHeader(QNetworkRequest::ContentLengthHeader,contentLength);
     _Http->request(req, [this]{return true;}, MyHttp::POST, &content);
@@ -307,7 +304,7 @@ void QQZone::queryQRCode()
 para=izone&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=%1&js_ver=10157&js_type=1\
 &login_sig=%2&pt_uistyle=32&aid=549000912&daid=5&").arg(action).arg(loginSig));
    QNetworkRequest req(url);
-    req.setRawHeader(QByteArray("Cookie"), QByteArray::fromStdString(cookieString().toStdString()));
+    req.setRawHeader(QByteArray("Cookie"), cookieString().toUtf8());
             _Http->request(req, [this]{
                                               auto reply = _Http->getReply();
                                               auto buf = reply->readAll();
@@ -325,8 +322,8 @@ para=izone&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=%1&js_ver=10157
                                                   disconnect(_timer.get(), SIGNAL(timeout()), this, SLOT(queryQRCode()));
                                                   QUrl url(rex.cap(3));
                                                   QNetworkRequest req(url);
-                                                  req.setRawHeader(QByteArray("Cookie"),
-                                                                  QByteArray::fromStdString(cookieString().toStdString()));
+                                                  req.setRawHeader(QByteArray("Cookie"),cookieString().toUtf8());
+
                                                   _Http->request(req, [this]{
                                                                                          parseCookie();
                                                                                          connect(_timer.get(), SIGNAL(timeout()), this, SLOT(pollForNewFeed()));
@@ -351,8 +348,8 @@ externparam=&firstGetGroup=0&icServerTime=0&mixnocache=0&scene=0&begintime=0&cou
 useutf8=1&outputhtmlfeed=1&getob=1&g_tk=%2").arg(uin).arg(genG_tk()));
     // qDebug() << url.toString();
      QNetworkRequest req(url);
-     req.setRawHeader(QByteArray("Cookie"),
-                     QByteArray::fromStdString(cookieString().toStdString()));
+     req.setRawHeader(QByteArray("Cookie"), cookieString().toUtf8());
+
     if(req.url().isValid())
          _Http->request(req, [this]{
                                          auto reply = _Http->getReply();
@@ -406,8 +403,7 @@ void QQZone::pollForNewFeed()
 uin=%1&g_tk=%2").arg(getMyUin()).arg(genG_tk());
     QUrl url(urlStr);
     QNetworkRequest req(url);
-    req.setRawHeader(QByteArray("Cookie"),
-                    QByteArray::fromStdString(cookieString().toStdString()));
+    req.setRawHeader(QByteArray("Cookie"), cookieString().toUtf8());
     _Http->request(req, [this]{
                                         auto reply = _Http->getReply();
                                         auto buf = reply->readAll();
@@ -418,7 +414,7 @@ uin=%1&g_tk=%2").arg(getMyUin()).arg(genG_tk());
                                         rex.indexIn(*strBuf);
                                         auto jsonString = jsObj2JSOn(rex.cap(1));
                                       //  std::cout << jsonString.toStdString() << std::endl;
-                                        auto  jsonbuf = QByteArray::fromStdString(jsonString.toStdString());
+                                        auto  jsonbuf = QByteArray(jsonString.toUtf8());
                                         auto  jsonDoc = QJsonDocument::fromJson(jsonbuf);
                                         if (!jsonDoc.isObject())
                                             return true;
@@ -474,11 +470,11 @@ commentId=%5&commentUin=%6&richval=&richtype=&private=0&paramstr=1").arg(opuin).
            std::cout << table.toStdString() << std::endl;
     }
 
-     QByteArray content = QByteArray::fromStdString(table.toStdString());
+     QByteArray content = table.toUtf8();
      auto contentLength = content.length();
 
     QNetworkRequest req(url);
-    req.setRawHeader(QByteArray("Cookie"), QByteArray::fromStdString(cookieString().toStdString()));
+    req.setRawHeader(QByteArray("Cookie"), cookieString().toUtf8());
     req.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
     req.setHeader(QNetworkRequest::ContentLengthHeader,contentLength);
     _Http->request(req, [this]{return true;}, MyHttp::POST, &content);
@@ -505,7 +501,7 @@ commentId=%5&commentUin=%6&richval=&richtype=&private=0&paramstr=1").arg(opuin).
 void QQZone::doReply(const QString &jsonStr,int count)
 {
     //std::cout << jsonStr.toStdString() << std::endl;
-    auto  buf = QByteArray::fromStdString(jsonStr.toStdString());
+    auto  buf = jsonStr.toUtf8();
     auto  jsonDoc = QJsonDocument::fromJson(buf);
 
     QJsonValue  globalData = (jsonDoc.object())["data"];
