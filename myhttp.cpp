@@ -6,9 +6,9 @@ void MyHttp::EventHandle(const QString &key)
     if (iter != _Handles.end()){
         auto &handlers= iter->second;
         if (handlers())
-            _Handles.erase(iter);
-        else return;
+            _Handles.erase(iter);      
     }
+    return;
 }
 
 MyHttp::MyHttp(QObject *parent) :

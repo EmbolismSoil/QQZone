@@ -231,6 +231,7 @@ void QQZone::doLike(QString &jsonStr)
         rex.setMinimal(true);
         rex.indexIn(html);
         auto content = rex.cap(1);
+#if 0
         _Robot->request(rex.cap(1), uin ,[this, topicId, uin]{
             auto ptr = _Robot->getReply();
             if (!ptr->isReadable())
@@ -248,6 +249,7 @@ void QQZone::doLike(QString &jsonStr)
             }
             return true;
         });
+#endif
         std::cout << "nickNmae = " << nickName.toStdString()
                                 << "  uin = " << uin.toStdString()
                                  << " content : " << dealContent(content).toStdString()  << std::endl;
@@ -591,6 +593,8 @@ void QQZone::doReply(const QString &jsonStr,int count)
                     qDebug() << remark;
                 }
             }
+            if (remark.contains(QString("相关新闻")))
+                    remark = QString("哎呀，咱们聊点别的吧");
             auto words = QString("@{uin:%1,nick:%2,auto:1} %3").arg(uin).arg(nickName).arg(remark);
             doRemark(HostUin, topicId, words, commitId, commentUin);
             return true;
