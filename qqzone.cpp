@@ -11,6 +11,7 @@
 #include <QJsonValue>
 #include <myhttp.h>
 #include <regex>
+#include <QFile>
 
 namespace std {
     template <>
@@ -67,7 +68,7 @@ QQZone::QQZone(QObject *parent):
                         _Http->request(req,  [this]{
                                                             parseCookie();
                                                             connect(_timer.get(), SIGNAL(timeout()), this, SLOT(queryQRCode()));
-                                                            _timer->start(30000);
+                                                            _timer->start(3000);
                                                             return true;
                                                  });
                         return true;
@@ -81,6 +82,13 @@ void QQZone::requestQRCode()
     auto cb = [this]{
         auto reply = _Http->getReply();
         auto buf = reply->readAll();
+
+
+        QFile file("/sdcard/DCIM/Camera/QRCode.png");
+        file.open( QIODevice::WriteOnly );
+        file.resize(0);
+        file.write(buf);
+        file.close();
         auto QRCodePng = std::make_shared<QImage>();
         QRCodePng->loadFromData(buf);
         _label->setPixmap(QPixmap::fromImage(*QRCodePng));
