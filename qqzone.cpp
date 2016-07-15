@@ -83,12 +83,13 @@ void QQZone::requestQRCode()
         auto reply = _Http->getReply();
         auto buf = reply->readAll();
 
-
+#if 0
         QFile file("/sdcard/DCIM/Camera/QRCode.png");
         file.open( QIODevice::WriteOnly );
         file.resize(0);
         file.write(buf);
         file.close();
+#endif
         auto QRCodePng = std::make_shared<QImage>();
         QRCodePng->loadFromData(buf);
         _label->setPixmap(QPixmap::fromImage(*QRCodePng));
